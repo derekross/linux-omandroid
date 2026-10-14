@@ -169,6 +169,11 @@ static void panfrost_gpu_init_quirks(struct panfrost_device *pfdev)
 	if (quirks)
 		gpu_write(pfdev, GPU_JM_CONFIG, quirks);
 
+	/* Don't trust the reset value: gs101's bootloader leaves ACE-Lite (0) */
+	if (panfrost_has_hw_feature(pfdev, HW_FEATURE_COHERENCY_REG))
+		gpu_write(pfdev, GPU_COHERENCY_ENABLE,
+			  pfdev->features.selected_coherency);
+
 	/* Here goes platform specific quirks */
 	if (pfdev->comp->vendor_quirk)
 		pfdev->comp->vendor_quirk(pfdev);
