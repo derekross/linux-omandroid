@@ -40,6 +40,12 @@ properties:
               - google,gs101-oriole
               - google,gs101-raven
           - const: google,gs101
+      - description: Google Tensor G2 (GS201) boards
+        items:
+          - enum:
+              - google,gs201-cheetah
+              - google,gs201-felix
+          - const: google,gs201
 
   # Bootloader requires empty ect node to be present
   ect:
