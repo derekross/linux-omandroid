@@ -169,6 +169,11 @@ static void panfrost_gpu_init_quirks(struct panfrost_device *pfdev)
 	if (quirks)
 		gpu_write(pfdev, GPU_JM_CONFIG, quirks);
 
+	/* Don't trust the reset value: gs101's bootloader leaves ACE-Lite (0) */
+	if (panfrost_has_hw_feature(pfdev, HW_FEATURE_COHERENCY_REG))
+		gpu_write(pfdev, GPU_COHERENCY_ENABLE,
+			  pfdev->features.selected_coherency);
+
 	/* Here goes platform specific quirks */
 	if (pfdev->comp->vendor_quirk)
 		pfdev->comp->vendor_quirk(pfdev);
@@ -242,6 +247,9 @@ static const struct panfrost_model gpu_models[] = {
 	/* MediaTek MT8188 Mali-G57 MC3 */
 	GPU_MODEL(g57, 0x9093,
 		GPU_REV(g57, 0, 0)),
+
+	/* Google gs101 (Pixel 6) Mali-G78 MP20, tBEx: GPU_ID 0x9202, matched masked */
+	GPU_MODEL(g78, 0x9002),
 	{0},
 };
 
