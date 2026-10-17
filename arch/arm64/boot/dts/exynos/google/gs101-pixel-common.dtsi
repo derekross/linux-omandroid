@@ -20,6 +20,16 @@
 		serial0 = &serial_0;
 	};
 
+	/* Target of the debug-policy overlay ABL applies from the dpm partition. */
+	dpm: dpm { };
+
+	/* Label stubs so that overlay applies (it only sets their status). */
+	dpm-stubs {
+		log_arrdumppanic: log-arrdumppanic { status = "disabled"; };
+		log_preslcdump: log-preslcdump { status = "disabled"; };
+		log_slcdump: log-slcdump { status = "disabled"; };
+	};
+
 	chosen {
 		/* Bootloader expects bootargs specified otherwise it crashes */
 		bootargs = "";
@@ -874,11 +884,20 @@
 	status = "okay";
 };
 
+/*
+ * No Type-C port controller driver runs yet, so don't make the controller
+ * wait for the MAX77759's role switch: USB 2 device mode on the USB 2 PHY,
+ * as cheetah runs, until the TCPC and the role switch are brought up.
+ * Keep usb-role-switch: in peripheral mode it registers nothing, but
+ * without it dwc3 looks for an extcon through the PHY's port and waits
+ * forever for the TCPC to provide one ("failed to get extcon").
+ */
 &usbdrd31_dwc3 {
-	dr_mode = "otg";
+	dr_mode = "peripheral";
 	usb-role-switch;
-	role-switch-default-mode = "peripheral";
-	maximum-speed = "super-speed-plus";
+	maximum-speed = "high-speed";
+	phys = <&usbdrd31_phy 0>;
+	phy-names = "usb2-phy";
 
 	status = "okay";
 
@@ -889,8 +908,12 @@
 	};
 };
 
+/*
+ * No orientation-switch: nothing reports a cable orientation without a
+ * TCPC driver, and with it set the PHY never forces VBUS and B-valid, so
+ * dwc3 stays "Disconnected". Without it the PHY forces both at init.
+ */
 &usbdrd31_phy {
-	orientation-switch;
 	/* TODO: Update these once PMIC is implemented */
 	pll-supply = <&reg_placeholder>;
 	dvdd-usb20-supply = <&reg_placeholder>;
@@ -927,6 +950,17 @@
 };
 
 &watchdog_cl0 {
+	timeout-sec = <30>;
+
+	status = "okay";
+};
+
+/*
+ * Linux runs both cluster watchdogs: cheetah's ABL leaves them running,
+ * raven's leaves them off, and a running one nobody feeds resets the
+ * phone at about 60 s.
+ */
+&watchdog_cl1 {
 	timeout-sec = <30>;
 
 	status = "okay";
